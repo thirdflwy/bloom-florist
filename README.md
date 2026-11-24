@@ -27,8 +27,13 @@ bloom-florist/
 
 ## URL Deploy
 
+<<<<<<< HEAD
 - **Frontend PWA:** https://bloom-florist-co.vercel.app
 - **Backend REST API:** https://bloom-florist-api.vercel.app
+=======
+- **Frontend PWA:** `https://bloom-florist-co.vercel.app`
+- **Backend REST API:** `https://bloom-florist-api.vercel.app`
+>>>>>>> 80695d904af1835ff42941a5a6f1fc0a0d6d1c16
 
 ---
 
