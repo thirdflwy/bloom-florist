@@ -12,6 +12,7 @@ import adminRoutes from './routes/adminRoutes.js';
 dotenv.config();
 
 const app = express();
+app.set('trust proxy', 1);
 
 // Konfigurasi CORS terbatas pada FRONTEND_URL (mendukung multi-origin dipisahkan koma + localhost dev)
 const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:5173')
