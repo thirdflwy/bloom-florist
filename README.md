@@ -27,8 +27,8 @@ bloom-florist/
 
 ## URL Deploy
 
-- **Frontend PWA:** `https://bloom-florist-pwa.vercel.app`
-- **Backend REST API:** `https://bloom-florist-api.vercel.app`
+- **Frontend PWA:** https://bloom-florist-co.vercel.app
+- **Backend REST API:** https://bloom-florist-api.vercel.app
 
 ---
 
@@ -39,19 +39,19 @@ bloom-florist/
 - **Detail Produk (`/produk/:id`):** Informasi lengkap buket beserta validasi jumlah pembelian agar tidak melebihi stok.
 - **Akun & Profil Pelanggan (`/profil`):**
   - Pendaftaran akun baru (**Nama**, **Password**, **Nomor Telepon**, **Email**, **Alamat opsional**) dengan validasi keunikan nama, nomor telepon, dan email di server serta hashing password menggunakan `crypto.scryptSync`.
-  - Masuk akun menggunakan **Nama / Nomor Telepon** dan **Password**.
-  - Ubah profil (termasuk ganti password opsional), informasi toko & rekening dari `GET /api/config`, indikator status online/offline, dan tombol instalasi PWA (`beforeinstallprompt`).
+  - Masuk akun menggunakan **Nama / Nomor Telepon** dan **Password**, serta sinkronisasi otomatis profil dari database (`GET /api/customers/me`).
+  - Tampilan password tersembunyi (`••••••••••••`) pada kartu profil dengan opsi ubah profil & ganti password opsional, informasi toko & rekening dari `GET /api/config`, indikator status online/offline, dan tombol instalasi PWA (`beforeinstallprompt`).
 - **Keranjang (`/keranjang`) & Checkout (`/checkout`):** Tersimpan di `localStorage`, wajib masuk akun sebelum memesan, pemilihan tanggal ambil minimal **H+1**, jam ambil mulai **08:00 WIB**, serta kartu ucapan maksimal **200 karakter**.
 - **Pesanan Saya (`/pesanan`) & Detail Pesanan (`/pesanan/:id`):**
-  - Khusus dapat diakses setelah pelanggan masuk ke akunnya.
+  - Khusus dapat diakses setelah pelanggan masuk ke akunnya, dilengkapi pencarian riwayat pesanan berdasarkan **nama produk/buket** maupun **ID pesanan**.
   - Menampilkan instruksi transfer dari `GET /api/config`, unggah/perbarui bukti transfer (otomatis dikompres di browser `< 2 MB` melalui Canvas API), catatan penolakan jika ditolak penjual, tombol konfirmasi WhatsApp, dan pembatalan pesanan sebelum pembayaran terverifikasi.
 
 ### Sisi Penjual / Admin
 *(Diakses langsung melalui path URL `/admin` tanpa tautan di navigasi pelanggan)*
 - **Login Admin (`/admin`):** Autentikasi menggunakan `ADMIN_KEY` yang disimpan di `sessionStorage` dan dikirim melalui header `x-admin-key`.
-- **Daftar Pesanan & Ringkasan Penjualan (`/admin/pesanan`):** Filter pesanan per `payment_status` (default: *Menunggu Verifikasi*) serta ringkasan total pesanan selesai, omzet, dan 3 buket terlaris.
+- **Daftar Pesanan & Ringkasan Penjualan (`/admin/pesanan`):** Filter pesanan berdasarkan `payment_status` (*Menunggu Verifikasi*, *Semua Pesanan*, *Belum Bayar*, *Terverifikasi*, *Ditolak*) serta filter status **Selesai** (`status=selesai`), dilengkapi ringkasan total pesanan selesai, omzet, dan 3 buket terlaris.
 - **Detail Pesanan Admin (`/admin/pesanan/:id`):** Melihat bukti transfer via **Signed URL** berumur pendek, menyetujui pembayaran (otomatis mengisi `paid_at` dan mengubah status menjadi `diproses`), menolak pembayaran dengan catatan wajib, memajukan status pesanan (`diproses → siap_diambil → selesai`), dan membatalkan pesanan belum terverifikasi.
-- **Kelola Produk (`/admin/produk`):** Tambah, ubah, unggah/ganti foto produk ke bucket publik `product-images`, nonaktifkan produk (*soft delete* `is_available = false`), dan aktifkan kembali.
+- **Kelola Produk (`/admin/produk`):** Tambah, ubah, unggah/ganti foto produk ke bucket publik `product-images`, filter per kategori momen & nonaktif, nonaktifkan produk (*soft delete* `is_available = false` yang otomatis dikelompokkan ke **Kategori Nonaktif** di paling bawah), dan aktifkan kembali.
 
 ---
 
@@ -109,6 +109,7 @@ Basis URL: `/api` (kecuali root health check `GET /`). Seluruh endpoint **Admin*
 | `DELETE` | `/products/:id` | Admin | Nonaktifkan produk (*soft delete* `is_available = false`) |
 | `POST` | `/customers/register` | Publik | Daftar akun pelanggan baru (`name`, `password`, `phone`, `email`, `address` opsional) |
 | `POST` | `/customers/login` | Publik | Masuk akun pelanggan (`identifier` nama/nomor telepon + `password`) |
+| `GET` | `/customers/me` | Publik | Sinkronisasi profil pelanggan terbaru dari database (`?id=&name=&phone=`) |
 | `PUT` | `/customers/profile` | Publik | Perbarui profil & ubah password opsional untuk akun pelanggan |
 | `GET/POST/PUT/DELETE` | `/customers`, `/customers/:id` | Admin | Manajemen data pelanggan oleh admin |
 | `POST` | `/orders` | Publik | Buat pesanan secara atomik via RPC `create_order` (harga & stok divalidasi server) |
@@ -118,7 +119,7 @@ Basis URL: `/api` (kecuali root health check `GET /`). Seluruh endpoint **Admin*
 | `POST` | `/orders/:id/payment-proof` | Publik | Unggah foto bukti transfer (`multipart/form-data`, field `proof`, maks. 2 MB) |
 | `PATCH` | `/orders/:id/cancel` | Pelanggan / Admin | Batalkan pesanan sebelum terverifikasi; pelanggan wajib cocok `phone`, admin via `x-admin-key` |
 | `GET` | `/admin/ping` | Admin | Validasi `x-admin-key` |
-| `GET` | `/admin/orders` | Admin | Daftar semua pesanan (mendukung filter `?payment_status=`) |
+| `GET` | `/admin/orders` | Admin | Daftar semua pesanan (mendukung filter `?payment_status=` & `?status=`) |
 | `GET` | `/admin/products` | Admin | Daftar seluruh produk termasuk yang berstatus nonaktif |
 | `PATCH` | `/orders/:id/payment` | Admin | Setujui atau tolak pembayaran (catatan wajib saat menolak) via RPC `review_payment` |
 | `PATCH` | `/orders/:id/status` | Admin | Majukan status pesanan (`diproses → siap_diambil → selesai`) |
@@ -141,8 +142,8 @@ Basis URL: `/api` (kecuali root health check `GET /`). Seluruh endpoint **Admin*
 - **RLS Aktif Tanpa Policy:** Kelima tabel di Supabase mengaktifkan Row Level Security tanpa policy publik sehingga akses langsung melalui `anon key` tertutup; seluruh akses database dilakukan oleh backend melalui `SUPABASE_SERVICE_ROLE_KEY`.
 - **Validasi Upload Berlapis:** Unggahan bukti bayar dan foto produk dibatasi maksimal **2 MB** dan diperiksa **magic bytes**-nya di server (hanya JPG, PNG, dan WebP asli yang diterima).
 - **Bucket Privat Bukti Bayar:** Bucket `payment-proofs` bersifat privat dan hanya dapat diakses melalui *signed URL* berumur pendek (15 menit).
-- **Timing-Safe Admin Key & Rate Limiting:** Perbandingan `x-admin-key` menggunakan `crypto.timingSafeEqual` di atas SHA-256 digest, serta pembatasan request (`express-rate-limit`) pada `/api/admin/*`, endpoint unggahan, dan pembatalan pesanan.
-- **CORS Terbatas:** Diatur melalui `FRONTEND_URL` pada environment variable backend.
+- **Timing-Safe Admin Key & Rate Limiting:** Perbandingan `x-admin-key` menggunakan `crypto.timingSafeEqual` di atas SHA-256 digest, serta pembatasan request (`express-rate-limit` dengan `trust proxy` untuk Vercel) pada `/api/admin/*`, endpoint unggahan, dan pembatalan pesanan.
+- **CORS & SPA Routing Terkelola:** CORS dibatasi melalui `FRONTEND_URL` pada environment variable backend, dan routing SPA frontend di-rewrite ke `/index.html` melalui `florist-pwa/vercel.json`.
 
 ### Keterbatasan yang Disadari (Lingkup Praktikum)
 - **Autentikasi Pelanggan Sederhana:** Sesi pelanggan disimpan di `localStorage` setelah login tanpa JWT token; pembatalan oleh pelanggan diverifikasi dengan mencocokkan UUID pesanan dan nomor telepon pemesan.
