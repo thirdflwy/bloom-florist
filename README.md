@@ -27,8 +27,6 @@ bloom-florist/
 
 ## URL Deploy
 
-> *Perbarui tautan di bawah ini dengan URL proyek Vercel Anda setelah proses deploy selesai.*
-
 - **Frontend PWA:** `https://bloom-florist-pwa.vercel.app`
 - **Backend REST API:** `https://bloom-florist-api.vercel.app`
 
