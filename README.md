@@ -70,20 +70,6 @@ cd florist-api
 npm install
 cp .env.example .env
 ```
-Sesuaikan isi `florist-api/.env`:
-```env
-SUPABASE_URL=https://your-project-id.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
-ADMIN_KEY=bloom-admin-2026
-FRONTEND_URL=http://localhost:5173
-BANK_NAME=BCA
-BANK_ACCOUNT=8720194821
-BANK_HOLDER=Bloom & Co. Florist
-STORE_NAME=Bloom & Co. Botanical Atelier
-STORE_ADDRESS=Jl. Prof. Sudarto No. 12, Tembalang, Semarang
-STORE_OPEN_TIME=08:00
-PORT=3000
-```
 Jalankan server development:
 ```bash
 npm run dev
