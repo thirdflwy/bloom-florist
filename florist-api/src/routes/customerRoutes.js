@@ -5,9 +5,10 @@ import { adminLimiter } from '../middleware/rateLimiter.js';
 
 const router = express.Router();
 
-// Publik: Daftar, Masuk, dan Perbarui Profil Pelanggan
+// Publik: Daftar, Masuk, Sinkronisasi & Perbarui Profil Pelanggan
 router.post('/register', CustomerController.register);
 router.post('/login', CustomerController.login);
+router.get('/me', CustomerController.getMe);
 router.put('/profile', CustomerController.updateProfile);
 
 // Operasi manajemen daftar pelanggan di bawah ini memerlukan autentikasi Admin

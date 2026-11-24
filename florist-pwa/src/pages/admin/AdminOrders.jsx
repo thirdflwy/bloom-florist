@@ -14,17 +14,18 @@ import api, { AdminSession } from '../../services/api.js';
 import { formatCurrency, formatDateId } from '../../utils/formatCurrency.js';
 import { getStatusBadgeStyle, getPaymentBadgeStyle } from '../customer/Orders.jsx';
 
-const PAYMENT_FILTERS = [
-  { value: 'menunggu_verifikasi', label: 'Menunggu Verifikasi' },
-  { value: 'semua', label: 'Semua Pesanan' },
-  { value: 'belum_bayar', label: 'Belum Bayar' },
-  { value: 'terverifikasi', label: 'Terverifikasi' },
-  { value: 'ditolak', label: 'Ditolak' },
+const ORDER_FILTERS = [
+  { value: 'menunggu_verifikasi', label: 'Menunggu Verifikasi', type: 'payment' },
+  { value: 'semua', label: 'Semua Pesanan', type: 'all' },
+  { value: 'belum_bayar', label: 'Belum Bayar', type: 'payment' },
+  { value: 'terverifikasi', label: 'Terverifikasi', type: 'payment' },
+  { value: 'selesai', label: 'Selesai', type: 'status' },
+  { value: 'ditolak', label: 'Ditolak', type: 'payment' },
 ];
 
 export default function AdminOrders() {
   const navigate = useNavigate();
-  const [paymentFilter, setPaymentFilter] = useState('menunggu_verifikasi');
+  const [selectedFilter, setSelectedFilter] = useState('menunggu_verifikasi');
   const [orders, setOrders] = useState([]);
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -40,8 +41,11 @@ export default function AdminOrders() {
     setError('');
     try {
       const params = {};
-      if (paymentFilter !== 'semua') {
-        params.payment_status = paymentFilter;
+      const activeFilter = ORDER_FILTERS.find((f) => f.value === selectedFilter);
+      if (activeFilter?.type === 'payment') {
+        params.payment_status = selectedFilter;
+      } else if (activeFilter?.type === 'status') {
+        params.status = selectedFilter;
       }
       const [ordersRes, summaryRes] = await Promise.all([
         api.get('/admin/orders', { params }),
@@ -59,7 +63,7 @@ export default function AdminOrders() {
     } finally {
       setLoading(false);
     }
-  }, [paymentFilter, navigate]);
+  }, [selectedFilter, navigate]);
 
   useEffect(() => {
     fetchAdminOrders();
@@ -146,15 +150,15 @@ export default function AdminOrders() {
         </div>
       )}
 
-      {/* Filter Status Pembayaran (FR-21) — min-h-[44px] & gap-2 (8px) */}
+      {/* Filter Status Pembayaran & Pesanan Selesai (FR-21) — min-h-[44px] & gap-2 (8px) */}
       <div className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar">
-        {PAYMENT_FILTERS.map((f) => (
+        {ORDER_FILTERS.map((f) => (
           <button
             key={f.value}
             type="button"
-            onClick={() => setPaymentFilter(f.value)}
+            onClick={() => setSelectedFilter(f.value)}
             className={`px-4 py-2.5 rounded-full text-xs font-semibold shrink-0 transition min-h-[44px] ${
-              paymentFilter === f.value
+              selectedFilter === f.value
                 ? 'bg-[#1E3528] text-white shadow-sm'
                 : 'bg-white text-[#2F4538] border border-[#EAE6DF] hover:border-[#1E3528]'
             }`}

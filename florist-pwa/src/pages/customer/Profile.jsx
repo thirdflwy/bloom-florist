@@ -69,6 +69,40 @@ export default function Profile() {
       .get('/config')
       .then((res) => setConfig(res.data))
       .catch(() => {});
+
+    // Sinkronkan ulang profil pelanggan dari database jika sudah login/tersimpan
+    const rawSaved = (() => {
+      try {
+        return JSON.parse(localStorage.getItem('bloom_saved_customer') || 'null');
+      } catch {
+        return null;
+      }
+    })();
+
+    if (rawSaved && (rawSaved.id || rawSaved.name)) {
+      api
+        .get('/customers/me', {
+          params: {
+            id: rawSaved.id || undefined,
+            name: rawSaved.name || undefined,
+          },
+        })
+        .then((res) => {
+          if (res.data) {
+            const synced = CustomerStorage.saveCustomerInfo({
+              id: res.data.id,
+              name: res.data.name || '',
+              phone: res.data.phone || '',
+              email: res.data.email || '',
+              address: res.data.address || '',
+              has_password: Boolean(res.data.has_password ?? true),
+            });
+            setCustomer(synced);
+            setIsLoggedIn(Boolean(synced.phone && synced.name));
+          }
+        })
+        .catch(() => {});
+    }
   }, []);
 
   const completeAuthSuccess = (resData, message) => {

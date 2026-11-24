@@ -11,7 +11,8 @@ export const ProductModel = {
     let query = supabase
       .from('products')
       .select('*, categories(id, name)')
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .order('id', { ascending: true });
 
     if (!includeUnavailable) {
       query = query.eq('is_available', true);

@@ -1,13 +1,13 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   ClipboardList,
   Search,
+  X,
   Calendar,
   Clock,
   ArrowRight,
   Flower2,
-  Phone,
 } from 'lucide-react';
 import api, { CustomerStorage, getApiErrorMessage } from '../../services/api.js';
 import { formatCurrency, formatDateId } from '../../utils/formatCurrency.js';
@@ -57,7 +57,7 @@ export default function Orders() {
   const navigate = useNavigate();
   const isLoggedIn = CustomerStorage.isLoggedIn();
   const savedCustomer = CustomerStorage.getCustomerInfo();
-  const [phoneInput, setPhoneInput] = useState(savedCustomer.phone || '');
+  const [searchQuery, setSearchQuery] = useState('');
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -107,53 +107,67 @@ export default function Orders() {
     fetchOrders(savedCustomer.phone);
   }, [isLoggedIn, navigate, fetchOrders, savedCustomer.phone]);
 
+  const filteredOrders = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return orders;
+
+    return orders.filter((order) => {
+      const fullId = String(order.id || '').toLowerCase();
+      const shortId = fullId.slice(0, 8);
+      const matchOrderId = fullId.includes(q) || shortId.includes(q) || `#${shortId}`.includes(q);
+
+      const matchProductName = (order.order_items || []).some((item) =>
+        String(item.products?.name || '')
+          .toLowerCase()
+          .includes(q)
+      );
+
+      return matchOrderId || matchProductName;
+    });
+  }, [orders, searchQuery]);
+
   if (!isLoggedIn) {
     return null;
   }
-
-  const handleSearchByPhone = (e) => {
-    e.preventDefault();
-    CustomerStorage.saveCustomerInfo({ phone: phoneInput.trim() });
-    fetchOrders(phoneInput.trim());
-  };
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-6 pb-24">
       <div className="bg-[#FDF2F4] rounded-2xl p-6 border border-[#EAE6DF] mb-6">
         <span className="text-[11px] uppercase tracking-[0.2em] text-[#D45D79] font-bold block mb-1">
-          Riwayat Transaksi
+          Riwayat Transaksi · {savedCustomer.name}
         </span>
         <h1 className="font-serif text-2xl sm:text-3xl font-bold text-[#1E3528] leading-tight mb-1">
           Pesanan Saya
         </h1>
         <p className="text-xs sm:text-sm text-[#2F4538] leading-relaxed">
-          Menampilkan pesanan dari profil aktif di perangkat ini atau berdasarkan nomor telepon.
+          Cari riwayat pesanan Anda berdasarkan nama buket atau ID pesanan.
         </p>
 
-        {/* Form Pencarian Nomor Telepon */}
-        <form onSubmit={handleSearchByPhone} className="mt-4 flex gap-2">
-          <div className="relative flex-1">
-            <label htmlFor="order-phone-search" className="sr-only">
-              Cari nomor telepon pemesan
-            </label>
-            <Phone className="w-4 h-4 text-[#6B7F59] absolute left-4 top-1/2 -translate-y-1/2" />
-            <input
-              id="order-phone-search"
-              type="tel"
-              value={phoneInput}
-              onChange={(e) => setPhoneInput(e.target.value)}
-              placeholder="Masukkan nomor telepon pemesan (contoh: 0812...)"
-              className="w-full pl-11 pr-4 py-3 rounded-full bg-white border border-[#EAE6DF] text-sm focus:outline-none focus:border-[#D45D79] min-h-[44px]"
-            />
-          </div>
-          <button
-            type="submit"
-            className="px-6 py-3 rounded-full bg-[#1E3528] hover:bg-[#2F4538] text-white text-xs sm:text-sm font-semibold inline-flex items-center gap-2 shrink-0 min-h-[44px] transition"
-          >
-            <Search className="w-4 h-4 shrink-0" />
-            <span>Cari</span>
-          </button>
-        </form>
+        {/* Form Pencarian Nama Produk atau ID Pesanan */}
+        <div className="mt-4 relative">
+          <label htmlFor="order-search" className="sr-only">
+            Cari nama produk atau ID pesanan
+          </label>
+          <Search className="w-4 h-4 text-[#6B7F59] absolute left-4 top-1/2 -translate-y-1/2" />
+          <input
+            id="order-search"
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Cari nama bunga atau ID pesanan (contoh: Mawar, #A1B2...)"
+            className="w-full pl-11 pr-11 py-3 rounded-full bg-white border border-[#EAE6DF] text-sm text-[#1E3528] placeholder:text-[#2F4538]/60 focus:outline-none focus:border-[#D45D79] min-h-[44px]"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery('')}
+              className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full hover:bg-[#EEF1EA] text-[#2F4538] flex items-center justify-center"
+              aria-label="Bersihkan pencarian"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
       </div>
 
       {loading ? (
@@ -169,30 +183,43 @@ export default function Orders() {
         <div className="bg-white rounded-2xl border border-[#EAE6DF] p-8 text-center">
           <p className="text-sm font-semibold text-red-700">{error}</p>
         </div>
-      ) : orders.length === 0 ? (
+      ) : filteredOrders.length === 0 ? (
         <div className="bg-white rounded-2xl border border-[#EAE6DF] p-8 text-center space-y-4 shadow-editorial">
           <div className="w-14 h-14 rounded-full bg-[#EEF1EA] text-[#6B7F59] flex items-center justify-center mx-auto">
             <ClipboardList className="w-7 h-7" />
           </div>
           <h2 className="font-serif text-xl font-bold text-[#1E3528]">
-            Belum Ada Riwayat Pesanan
+            {orders.length === 0
+              ? 'Belum Ada Riwayat Pesanan'
+              : 'Pesanan Tidak Ditemukan'}
           </h2>
           <p className="text-xs sm:text-sm text-[#2F4538] max-w-md mx-auto leading-relaxed">
-            Pesanan yang Anda buat di perangkat ini akan otomatis tersimpan di sini, atau masukkan
-            nomor telepon yang Anda gunakan saat memesan.
+            {orders.length === 0
+              ? 'Anda belum memiliki pesanan pada akun ini. Yuk pilih buket bunga segar di katalog!'
+              : 'Tidak ada pesanan yang cocok dengan kata kunci atau ID pesanan tersebut.'}
           </p>
-          <Link
-            to="/katalog"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#D45D79] text-white text-xs sm:text-sm font-semibold min-h-[44px]"
-          >
-            <Flower2 className="w-4 h-4 shrink-0" />
-            <span>Pesan Buket Sekarang</span>
-          </Link>
+          {orders.length === 0 ? (
+            <Link
+              to="/katalog"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#D45D79] text-white text-xs sm:text-sm font-semibold min-h-[44px]"
+            >
+              <Flower2 className="w-4 h-4 shrink-0" />
+              <span>Pesan Buket Sekarang</span>
+            </Link>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setSearchQuery('')}
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#D45D79] text-white text-xs sm:text-sm font-semibold min-h-[44px]"
+            >
+              Reset Pencarian
+            </button>
+          )}
         </div>
       ) : (
         <div className="space-y-4">
           <h2 className="sr-only">Daftar Riwayat Pesanan</h2>
-          {orders.map((order) => {
+          {filteredOrders.map((order) => {
             const statusBadge = getStatusBadgeStyle(order.status);
             const paymentBadge = getPaymentBadgeStyle(order.payment_status);
             const itemCount = (order.order_items || []).reduce(

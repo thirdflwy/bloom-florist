@@ -78,9 +78,19 @@ export const CustomerStorage = {
   getCustomerInfo() {
     try {
       const raw = localStorage.getItem(SAVED_CUSTOMER_STORAGE);
-      return raw
-        ? JSON.parse(raw)
-        : { id: null, name: '', phone: '', email: '', address: '', has_password: false };
+      if (!raw) {
+        return { id: null, name: '', phone: '', email: '', address: '', has_password: false };
+      }
+      const parsed = JSON.parse(raw);
+      const hasLettersInPhone = parsed.phone && /[a-zA-Z]/.test(String(parsed.phone));
+      return {
+        id: parsed.id || null,
+        name: parsed.name || '',
+        phone: hasLettersInPhone ? '' : parsed.phone || '',
+        email: parsed.email || '',
+        address: parsed.address || '',
+        has_password: Boolean(parsed.has_password),
+      };
     } catch {
       return { id: null, name: '', phone: '', email: '', address: '', has_password: false };
     }
@@ -93,10 +103,15 @@ export const CustomerStorage = {
 
   saveCustomerInfo({ id, name, phone, email, address, has_password }) {
     const existing = this.getCustomerInfo();
+    const isPhoneValid =
+      phone !== undefined &&
+      !/[a-zA-Z]/.test(String(phone)) &&
+      String(phone).replace(/\D/g, '').length >= 9;
+
     const updated = {
       id: id !== undefined ? id : existing.id,
       name: name !== undefined ? name : existing.name,
-      phone: phone !== undefined ? phone : existing.phone,
+      phone: isPhoneValid ? String(phone).trim() : existing.phone,
       email: email !== undefined ? email : existing.email,
       address: address !== undefined ? address : existing.address,
       has_password: has_password !== undefined ? has_password : existing.has_password,

@@ -85,6 +85,43 @@ export const CustomerController = {
   },
 
   /**
+   * GET /api/customers/me?id=...&name=... (Publik)
+   * Mengambil data profil pelanggan terbaru dari database untuk sinkronisasi sesi
+   */
+  async getMe(req, res) {
+    try {
+      const { id, name, phone } = req.query;
+      let customer = null;
+
+      if (id) {
+        customer = await CustomerModel.findById(String(id));
+      }
+      if (!customer && phone) {
+        const found = await CustomerModel.findByPhone(String(phone));
+        if (found) {
+          const { password_hash, ...safe } = found;
+          customer = safe;
+        }
+      }
+      if (!customer && name) {
+        const found = await CustomerModel.findByNameOrPhone(String(name));
+        if (found) {
+          const { password_hash, ...safe } = found;
+          customer = safe;
+        }
+      }
+
+      if (!customer) {
+        return res.status(404).json({ error: 'Profil pelanggan tidak ditemukan.' });
+      }
+
+      return res.status(200).json({ ...customer, has_password: true });
+    } catch (err) {
+      return res.status(500).json({ error: err.message || 'Gagal menyinkronkan profil.' });
+    }
+  },
+
+  /**
    * PUT /api/customers/profile (Publik - untuk pembaruan profil pelanggan yang sudah login)
    */
   async updateProfile(req, res) {
