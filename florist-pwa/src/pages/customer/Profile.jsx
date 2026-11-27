@@ -174,6 +174,12 @@ export default function Profile() {
       setAuthError('Nama lengkap wajib diisi.');
       return;
     }
+    if (!/^[A-Za-z\s]+$/.test(registerForm.name.trim())) {
+      setAuthError(
+        'Nama lengkap hanya boleh berisi huruf dan spasi (tanpa angka atau karakter khusus).'
+      );
+      return;
+    }
     if (registerForm.password.length < 6) {
       setAuthError('Password minimal 6 karakter.');
       return;
@@ -492,7 +498,12 @@ export default function Profile() {
                   type="text"
                   required
                   value={editForm.name}
-                  onChange={(e) => setEditForm((p) => ({ ...p, name: e.target.value }))}
+                  onChange={(e) =>
+                    setEditForm((p) => ({
+                      ...p,
+                      name: e.target.value.replace(/[^A-Za-z\s]/g, ''),
+                    }))
+                  }
                   className="w-full pl-10 pr-4 py-3 rounded-xl bg-[#FAF8F5] border border-[#EAE6DF] text-sm focus:outline-none focus:border-[#D45D79] min-h-[44px]"
                 />
               </div>
@@ -703,7 +714,7 @@ export default function Profile() {
                 htmlFor="reg-name"
                 className="block text-xs font-semibold text-[#1E3528] mb-2"
               >
-                Nama Lengkap *
+                Nama Lengkap (Hanya Huruf) *
               </label>
               <div className="relative">
                 <User className="w-4 h-4 text-[#6B7F59] absolute left-3.5 top-1/2 -translate-y-1/2" />
@@ -712,7 +723,12 @@ export default function Profile() {
                   type="text"
                   required
                   value={registerForm.name}
-                  onChange={(e) => setRegisterForm((p) => ({ ...p, name: e.target.value }))}
+                  onChange={(e) =>
+                    setRegisterForm((p) => ({
+                      ...p,
+                      name: e.target.value.replace(/[^A-Za-z\s]/g, ''),
+                    }))
+                  }
                   placeholder="Contoh: Nadira Putri"
                   className="w-full pl-10 pr-4 py-3 rounded-xl bg-[#FAF8F5] border border-[#EAE6DF] text-sm focus:outline-none focus:border-[#D45D79] min-h-[44px]"
                 />

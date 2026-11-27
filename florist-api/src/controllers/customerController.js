@@ -1,5 +1,7 @@
 import { CustomerModel, normalizePhone } from '../models/customerModel.js';
 
+const NAME_LETTERS_ONLY_REGEX = /^[A-Za-z\s]+$/;
+
 export const CustomerController = {
   /**
    * POST /api/customers/register (Publik)
@@ -11,6 +13,12 @@ export const CustomerController = {
 
       if (!name || !String(name).trim()) {
         return res.status(400).json({ error: 'Nama lengkap wajib diisi.' });
+      }
+
+      if (!NAME_LETTERS_ONLY_REGEX.test(String(name).trim())) {
+        return res.status(400).json({
+          error: 'Nama lengkap hanya boleh berisi huruf dan spasi (tanpa angka atau karakter khusus).',
+        });
       }
 
       if (!password || String(password).length < 6) {
@@ -134,6 +142,11 @@ export const CustomerController = {
       }
       if (!name || !String(name).trim()) {
         return res.status(400).json({ error: 'Nama lengkap tidak boleh kosong.' });
+      }
+      if (!NAME_LETTERS_ONLY_REGEX.test(String(name).trim())) {
+        return res.status(400).json({
+          error: 'Nama lengkap hanya boleh berisi huruf dan spasi (tanpa angka atau karakter khusus).',
+        });
       }
       if (password && String(password).length < 6) {
         return res.status(400).json({ error: 'Password baru minimal 6 karakter.' });
