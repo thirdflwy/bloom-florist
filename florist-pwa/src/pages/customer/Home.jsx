@@ -14,11 +14,11 @@ import ProductCard from '../../components/ProductCard.jsx';
 import { useOnline } from '../../hooks/useOnline.js';
 
 const CATEGORY_VISUALS = [
-  'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=500&q=80',
-  'https://images.unsplash.com/photo-1526047932273-341f2a7631f9?auto=format&fit=crop&w=500&q=80',
-  'https://images.unsplash.com/photo-1563241527-3004b7be0ffd?auto=format&fit=crop&w=500&q=80',
-  'https://images.unsplash.com/photo-1487530811176-3780de880c2d?auto=format&fit=crop&w=500&q=80',
-  'https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=500&q=80',
+  'https://i.pinimg.com/1200x/be/e6/8f/bee68f10a7d141fff2cae1b25ea3fadb.jpg',
+  'https://i.pinimg.com/736x/12/65/8c/12658cbd28a4a7d31db5bb1f102d2b1e.jpg',
+  'https://i.pinimg.com/736x/17/ff/f7/17fff74ce018d2dba5a09d88683e808c.jpg',
+  'https://i.pinimg.com/736x/81/1f/b8/811fb8eba8747bbac1e90fab41997545.jpg',
+  'https://i.pinimg.com/736x/7d/4b/d9/7d4bd98fb981677b00b3f99c6c2f3a9c.jpg',
 ];
 
 export default function Home() {
