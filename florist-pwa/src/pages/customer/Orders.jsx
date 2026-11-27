@@ -4,6 +4,7 @@ import {
   ClipboardList,
   Search,
   X,
+  SlidersHorizontal,
   Calendar,
   Clock,
   ArrowRight,
@@ -53,11 +54,39 @@ export function getPaymentBadgeStyle(paymentStatus) {
   }
 }
 
+const CUSTOMER_ORDER_FILTERS = [
+  { value: 'semua', label: 'Semua' },
+  { value: 'belum_bayar', label: 'Belum Bayar' },
+  { value: 'menunggu_verifikasi', label: 'Menunggu Verifikasi' },
+  { value: 'ditolak', label: 'Bukti Ditolak' },
+  { value: 'diproses', label: 'Sedang Dirangkai' },
+  { value: 'siap_diambil', label: 'Siap Diambil di Toko' },
+  { value: 'selesai', label: 'Selesai' },
+  { value: 'dibatalkan', label: 'Dibatalkan' },
+];
+
+function matchOrderFilter(order, filterValue) {
+  if (filterValue === 'semua') return true;
+  if (filterValue === 'dibatalkan') return order.status === 'dibatalkan';
+  if (order.status === 'dibatalkan') return false;
+
+  if (filterValue === 'belum_bayar') return order.payment_status === 'belum_bayar';
+  if (filterValue === 'menunggu_verifikasi') {
+    return order.payment_status === 'menunggu_verifikasi';
+  }
+  if (filterValue === 'ditolak') return order.payment_status === 'ditolak';
+  if (filterValue === 'diproses') return order.status === 'diproses';
+  if (filterValue === 'siap_diambil') return order.status === 'siap_diambil';
+  if (filterValue === 'selesai') return order.status === 'selesai';
+  return true;
+}
+
 export default function Orders() {
   const navigate = useNavigate();
   const isLoggedIn = CustomerStorage.isLoggedIn();
   const savedCustomer = CustomerStorage.getCustomerInfo();
   const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('semua');
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -109,9 +138,11 @@ export default function Orders() {
 
   const filteredOrders = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    if (!q) return orders;
 
     return orders.filter((order) => {
+      if (!matchOrderFilter(order, statusFilter)) return false;
+      if (!q) return true;
+
       const fullId = String(order.id || '').toLowerCase();
       const shortId = fullId.slice(0, 8);
       const matchOrderId = fullId.includes(q) || shortId.includes(q) || `#${shortId}`.includes(q);
@@ -124,7 +155,7 @@ export default function Orders() {
 
       return matchOrderId || matchProductName;
     });
-  }, [orders, searchQuery]);
+  }, [orders, searchQuery, statusFilter]);
 
   if (!isLoggedIn) {
     return null;
@@ -170,6 +201,32 @@ export default function Orders() {
         </div>
       </div>
 
+      {/* Filter Status Pesanan & Pembayaran */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-2 mb-6 no-scrollbar">
+        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#2F4538] pr-1 shrink-0">
+          <SlidersHorizontal className="w-4 h-4 text-[#6B7F59]" />
+          <span>Status:</span>
+        </span>
+
+        {CUSTOMER_ORDER_FILTERS.map((f) => {
+          const count = orders.filter((o) => matchOrderFilter(o, f.value)).length;
+          return (
+            <button
+              key={f.value}
+              type="button"
+              onClick={() => setStatusFilter(f.value)}
+              className={`px-4 py-2.5 rounded-full text-xs font-semibold shrink-0 transition min-h-[44px] ${
+                statusFilter === f.value
+                  ? 'bg-[#1E3528] text-white shadow-sm'
+                  : 'bg-white text-[#2F4538] border border-[#EAE6DF] hover:border-[#D45D79]'
+              }`}
+            >
+              {f.label} ({count})
+            </button>
+          );
+        })}
+      </div>
+
       {loading ? (
         <div className="space-y-4">
           {[1, 2, 3].map((n) => (
@@ -196,7 +253,7 @@ export default function Orders() {
           <p className="text-xs sm:text-sm text-[#2F4538] max-w-md mx-auto leading-relaxed">
             {orders.length === 0
               ? 'Anda belum memiliki pesanan pada akun ini. Yuk pilih buket bunga segar di katalog!'
-              : 'Tidak ada pesanan yang cocok dengan kata kunci atau ID pesanan tersebut.'}
+              : 'Tidak ada pesanan yang cocok dengan filter status atau kata kunci tersebut.'}
           </p>
           {orders.length === 0 ? (
             <Link
@@ -209,10 +266,13 @@ export default function Orders() {
           ) : (
             <button
               type="button"
-              onClick={() => setSearchQuery('')}
+              onClick={() => {
+                setSearchQuery('');
+                setStatusFilter('semua');
+              }}
               className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#D45D79] text-white text-xs sm:text-sm font-semibold min-h-[44px]"
             >
-              Reset Pencarian
+              Reset Filter &amp; Pencarian
             </button>
           )}
         </div>
