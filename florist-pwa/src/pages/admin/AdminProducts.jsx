@@ -11,6 +11,7 @@ import {
   WifiOff,
   X,
   Loader2,
+  ArrowUpDown,
 } from 'lucide-react';
 import api, { AdminSession } from '../../services/api.js';
 import { formatCurrency } from '../../utils/formatCurrency.js';
@@ -43,6 +44,7 @@ export default function AdminProducts() {
 
   const [editingId, setEditingId] = useState(null);
   const [selectedFilter, setSelectedFilter] = useState('semua'); // 'semua' | category_id | 'nonaktif'
+  const [sortBy, setSortBy] = useState('terbaru');
   const [form, setForm] = useState(INITIAL_FORM);
   const [imageFile, setImageFile] = useState(null);
 
@@ -189,18 +191,34 @@ export default function AdminProducts() {
     }
   };
 
+  const sortProductList = (list) => {
+    const sorted = [...list];
+    if (sortBy === 'harga_asc') {
+      sorted.sort((a, b) => Number(a.price || 0) - Number(b.price || 0));
+    } else if (sortBy === 'harga_desc') {
+      sorted.sort((a, b) => Number(b.price || 0) - Number(a.price || 0));
+    } else if (sortBy === 'nama_asc') {
+      sorted.sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'id'));
+    } else if (sortBy === 'nama_desc') {
+      sorted.sort((a, b) => String(b.name || '').localeCompare(String(a.name || ''), 'id'));
+    }
+    return sorted;
+  };
+
   const activeProducts = products.filter((p) => p.is_available);
   const inactiveProducts = products.filter((p) => !p.is_available);
 
-  const visibleActiveProducts =
+  const visibleActiveProducts = sortProductList(
     selectedFilter === 'nonaktif'
       ? []
       : selectedFilter === 'semua'
       ? activeProducts
-      : activeProducts.filter((p) => p.category_id === selectedFilter);
+      : activeProducts.filter((p) => p.category_id === selectedFilter)
+  );
 
-  const visibleInactiveProducts =
-    selectedFilter === 'semua' || selectedFilter === 'nonaktif' ? inactiveProducts : [];
+  const visibleInactiveProducts = sortProductList(
+    selectedFilter === 'semua' || selectedFilter === 'nonaktif' ? inactiveProducts : []
+  );
 
   const renderProductCard = (prod) => {
     const isBusy = togglingId === prod.id;
@@ -507,10 +525,32 @@ export default function AdminProducts() {
 
       {/* DAFTAR SEMUA PRODUK TERMASUK NONAKTIF (FR-28) */}
       <div className="space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="font-serif text-xl font-bold text-[#1E3528]">
             Daftar Produk ({products.length})
           </h2>
+
+          <div className="flex items-center gap-2">
+            <label
+              htmlFor="admin-product-sort"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#2F4538]"
+            >
+              <ArrowUpDown className="w-3.5 h-3.5 text-[#6B7F59]" />
+              <span>Urutkan:</span>
+            </label>
+            <select
+              id="admin-product-sort"
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="px-4 py-2 rounded-full bg-white border border-[#EAE6DF] text-xs font-semibold text-[#1E3528] focus:outline-none focus:border-[#D45D79] min-h-[44px]"
+            >
+              <option value="terbaru">Terbaru</option>
+              <option value="harga_asc">Harga: Termurah - Termahal</option>
+              <option value="harga_desc">Harga: Termahal - Termurah</option>
+              <option value="nama_asc">Nama: A - Z (Ascend)</option>
+              <option value="nama_desc">Nama: Z - A (Descend)</option>
+            </select>
+          </div>
         </div>
 
         {/* Filter Kategori Produk + Kategori Nonaktif */}

@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Search, X, SlidersHorizontal, WifiOff } from 'lucide-react';
+import { Search, X, SlidersHorizontal, ArrowUpDown, WifiOff } from 'lucide-react';
 import api from '../../services/api.js';
 import ProductCard from '../../components/ProductCard.jsx';
 import { useOnline } from '../../hooks/useOnline.js';
@@ -14,6 +14,7 @@ export default function Catalog() {
   const [products, setProducts] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(initialCategory);
   const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState('terbaru');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -63,9 +64,9 @@ export default function Catalog() {
     }
   };
 
-  // Filter berdasarkan kategori dan pencarian nama produk (FR-02)
+  // Filter berdasarkan kategori, pencarian nama, dan pengurutan harga/alfabetis (FR-02)
   const filteredProducts = useMemo(() => {
-    return products.filter((item) => {
+    const filtered = products.filter((item) => {
       const matchCat =
         selectedCategory === 'semua' || item.category_id === selectedCategory;
       const matchQuery =
@@ -74,7 +75,19 @@ export default function Catalog() {
         item.description?.toLowerCase().includes(searchQuery.trim().toLowerCase());
       return matchCat && matchQuery;
     });
-  }, [products, selectedCategory, searchQuery]);
+
+    const sorted = [...filtered];
+    if (sortBy === 'harga_asc') {
+      sorted.sort((a, b) => Number(a.price || 0) - Number(b.price || 0));
+    } else if (sortBy === 'harga_desc') {
+      sorted.sort((a, b) => Number(b.price || 0) - Number(a.price || 0));
+    } else if (sortBy === 'nama_asc') {
+      sorted.sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'id'));
+    } else if (sortBy === 'nama_desc') {
+      sorted.sort((a, b) => String(b.name || '').localeCompare(String(a.name || ''), 'id'));
+    }
+    return sorted;
+  }, [products, selectedCategory, searchQuery, sortBy]);
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-6 pb-24">
@@ -126,7 +139,7 @@ export default function Catalog() {
       </div>
 
       {/* Filter Kategori Pill — min-h-[44px] & gap-2 (8px) sesuai Aturan 3C */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-4 mb-6 no-scrollbar">
+      <div className="flex items-center gap-2 overflow-x-auto pb-2 mb-4 no-scrollbar">
         <span className="inline-flex items-center gap-2 text-xs font-semibold text-[#2F4538] pr-2 shrink-0">
           <SlidersHorizontal className="w-4 h-4 text-[#6B7F59]" />
           <span>Kategori:</span>
@@ -160,6 +173,35 @@ export default function Catalog() {
         ))}
       </div>
 
+      {/* Bar Pengurutan (Harga & Alfabetis Ascend/Descend) */}
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-6">
+        <p className="text-xs font-medium text-[#2F4538]">
+          Menampilkan <strong className="text-[#1E3528]">{filteredProducts.length}</strong> buket bunga
+        </p>
+
+        <div className="flex items-center gap-2">
+          <label
+            htmlFor="catalog-sort"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#2F4538]"
+          >
+            <ArrowUpDown className="w-3.5 h-3.5 text-[#6B7F59]" />
+            <span>Urutkan:</span>
+          </label>
+          <select
+            id="catalog-sort"
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="px-4 py-2 rounded-full bg-white border border-[#EAE6DF] text-xs font-semibold text-[#1E3528] focus:outline-none focus:border-[#D45D79] min-h-[44px]"
+          >
+            <option value="terbaru">Terbaru</option>
+            <option value="harga_asc">Harga: Termurah - Termahal</option>
+            <option value="harga_desc">Harga: Termahal - Termurah</option>
+            <option value="nama_asc">Nama: A - Z (Ascend)</option>
+            <option value="nama_desc">Nama: Z - A (Descend)</option>
+          </select>
+        </div>
+      </div>
+
       {/* Daftar Produk */}
       {loading ? (
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
@@ -191,6 +233,7 @@ export default function Catalog() {
             onClick={() => {
               handleSelectCategory('semua');
               setSearchQuery('');
+              setSortBy('terbaru');
             }}
             className="px-6 py-3 rounded-full bg-[#D45D79] text-white text-xs font-semibold min-h-[44px]"
           >
